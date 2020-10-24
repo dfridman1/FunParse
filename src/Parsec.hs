@@ -1,7 +1,7 @@
 module Parsec where
 
 
-import Control.Applicative hiding (optional)
+import Control.Applicative hiding (optional, many)
 import Control.Monad
 import Data.Functor
 
@@ -121,6 +121,21 @@ option x pr = pr <|> (return x)
 
 optional :: Parser a -> Parser ()
 optional pr = (ignoreP pr) <|> emptyP
+
+
+many :: Parser a -> Parser [a]
+many pr = Parser $ \s -> case runParser pr s of
+                            Left err      -> Right ([], s)
+                            Right (r, s') -> case runParser (many pr) s' of
+                                                Right ([], s'') -> Right ([r], s')
+                                                Right (r', s'') -> Right (r: r', s'')
+
+
+many1 :: Parser a -> Parser [a]
+many1 pr = do
+    x  <- pr
+    xs <- many pr
+    return $ x: xs
 
 
 parse :: Parser a -> String -> Either ErrorMsg (a, ParseState)
