@@ -6,20 +6,24 @@ import Control.Monad
 import Data.Functor
 
 
-data ErrorMsg = EOF_ReachedError
-              | ExpectedEOF_Error Char
-              | ExpectedCharError Char Char
-              | UnexpectedCharError Char
+type Pos = (Int, Int)
+
+
+showPos :: Pos -> String
+showPos (linePos, charPos) = "Line " ++ show linePos ++ ", position " ++ show charPos ++ ": "
+
+
+data ErrorMsg = EOF_ReachedError Pos
+              | ExpectedEOF_Error Pos Char
+              | ExpectedCharError Pos Char Char
+              | UnexpectedCharError Pos Char
 
 
 instance Show ErrorMsg where
-    show EOF_ReachedError        = "Reached the end of input"
-    show (ExpectedEOF_Error c)   = "Expected EOF, received " ++ show c
-    show (ExpectedCharError e r) = "Expected " ++ show e ++ ", received " ++ show r
-    show (UnexpectedCharError c) = "Received unexpected " ++ show c
-
-
-type Pos = (Int, Int)
+    show (EOF_ReachedError p)      = showPos p ++ "reached the end of input"
+    show (ExpectedEOF_Error p c)   = showPos p ++ "expected EOF, received " ++ show c
+    show (ExpectedCharError p e r) = showPos p ++ "expected " ++ show e ++ ", received " ++ show r
+    show (UnexpectedCharError p c) = showPos p ++ "received unexpected " ++ show c
 
 
 data ParseState = ParseState {
@@ -53,7 +57,7 @@ instance Applicative Parser where
 
 
 instance Alternative Parser where
-    empty = Parser $ \_ -> Left EOF_ReachedError
+    empty = Parser $ \s -> Left $ EOF_ReachedError (getParsePos s)
 
     lPr <|> rPr = Parser $ \s -> case (runParser lPr s, runParser rPr s) of
                                     (t@(Right _), _) -> t 
@@ -76,8 +80,8 @@ instance Monad Parser where
 char :: Char -> Parser Char
 char ch = Parser $ \s -> case getParseString s of
                              (x: xs) -> if x == ch then Right (ch, updateParseState s [x])
-                                                   else Left $ ExpectedCharError ch x
-                             []      -> Left EOF_ReachedError
+                                                   else Left $ ExpectedCharError (getParsePos s) ch x
+                             []      -> Left $ EOF_ReachedError (getParsePos s)
 
 
 string :: String -> Parser String
@@ -92,13 +96,13 @@ notChar :: Char -> Parser Char
 notChar ch = Parser $ \s -> case getParseString s of
                                 (x: xs) -> if x /= ch then Right (x, updateParseState s [x])
                                                       else Left $ undefined
-                                []      -> Left EOF_ReachedError
+                                []      -> Left $ EOF_ReachedError (getParsePos s)
 
 
 anyChar :: Parser Char
 anyChar = Parser $ \s -> case getParseString s of
                             (x: xs) -> Right (x, updateParseState s [x])
-                            []      -> Left EOF_ReachedError
+                            []      -> Left $ EOF_ReachedError (getParsePos s)
 
 
 emptyP :: Parser ()
@@ -108,7 +112,7 @@ emptyP = return ()
 eof :: Parser ()
 eof = Parser $ \s -> case getParseString s of
                         []        -> Right ((), s)
-                        (x: _)    -> Left $ ExpectedEOF_Error x
+                        (x: _)    -> Left $ ExpectedEOF_Error (getParsePos s) x
 
 
 ignoreP :: Parser a -> Parser ()
