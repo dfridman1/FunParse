@@ -19,7 +19,28 @@ instance Show ErrorMsg where
     show (UnexpectedCharError c) = "Received unexpected " ++ show c
 
 
-data Parser a = Parser { runParser :: String -> Either ErrorMsg (a, String) }
+type Pos = (Int, Int)
+
+
+data ParseState = ParseState {
+                    getParseString  :: String,
+                    getParsePos     :: Pos
+                  } deriving Show
+
+
+updateParseState :: ParseState -> String -> ParseState
+updateParseState state s = ParseState newS newPos
+    where newPos = updateParsePos (getParsePos state) s
+          newS   = drop (length s) (getParseString state)
+
+
+updateParsePos :: Pos -> String -> Pos
+updateParsePos = foldl update
+    where update (linePos, charPos) c | c == '\n' = (linePos + 1, 0)
+                                      | otherwise = (linePos, charPos + 1)
+
+
+data Parser a = Parser { runParser :: ParseState -> Either ErrorMsg (a, ParseState) }
 
 
 instance Functor Parser where
@@ -53,8 +74,8 @@ instance Monad Parser where
 
 
 char :: Char -> Parser Char
-char ch = Parser $ \s -> case s of
-                             (x: xs) -> if x == ch then Right (ch, xs)
+char ch = Parser $ \s -> case getParseString s of
+                             (x: xs) -> if x == ch then Right (ch, updateParseState s [x])
                                                    else Left $ ExpectedCharError ch x
                              []      -> Left EOF_ReachedError
 
@@ -68,15 +89,15 @@ string (x: xs) = do
 
 
 notChar :: Char -> Parser Char
-notChar ch = Parser $ \s -> case s of
-                                (x: xs) -> if x /= ch then Right (x, xs)
+notChar ch = Parser $ \s -> case getParseString s of
+                                (x: xs) -> if x /= ch then Right (x, updateParseState s [x])
                                                       else Left $ undefined
                                 []      -> Left EOF_ReachedError
 
 
 anyChar :: Parser Char
-anyChar = Parser $ \s -> case s of
-                            (x: xs) -> Right (x, xs)
+anyChar = Parser $ \s -> case getParseString s of
+                            (x: xs) -> Right (x, updateParseState s [x])
                             []      -> Left EOF_ReachedError
 
 
@@ -85,8 +106,8 @@ emptyP = return ()
 
 
 eof :: Parser ()
-eof = Parser $ \s -> case s of
-                        []        -> Right ((), [])
+eof = Parser $ \s -> case getParseString s of
+                        []        -> Right ((), s)
                         (x: _)    -> Left $ ExpectedEOF_Error x
 
 
@@ -100,3 +121,9 @@ option x pr = pr <|> (return x)
 
 optional :: Parser a -> Parser ()
 optional pr = (ignoreP pr) <|> emptyP
+
+
+parse :: Parser a -> String -> Either ErrorMsg (a, ParseState)
+parse pr s = do
+    state <- return $ ParseState s (1, 1)
+    runParser pr state
