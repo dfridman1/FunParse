@@ -62,7 +62,7 @@ instance Alternative Parser where
     lPr <|> rPr = Parser $ \s -> case (runParser lPr s, runParser rPr s) of
                                     (t@(Right _), _) -> t 
                                     (_, t@(Right _)) -> t
-                                    (t, _)          -> t
+                                    (_, t)          -> t
 
 
 oneOf :: (Foldable t, Alternative f) => t (f a) -> f a
@@ -97,6 +97,14 @@ notChar ch = Parser $ \s -> case getParseString s of
                                 (x: xs) -> if x /= ch then Right (x, updateParseState s [x])
                                                       else Left $ undefined
                                 []      -> Left $ EOF_ReachedError (getParsePos s)
+
+
+digit :: Parser Char
+digit = oneOf $ map (char . head . show) [0..9]
+
+
+digits :: Parser String
+digits = many1 digit
 
 
 anyChar :: Parser Char
