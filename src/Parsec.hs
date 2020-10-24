@@ -10,7 +10,7 @@ data ErrorMsg = EOF
               | MatchFail deriving Show
 
 
-data Parser a = Parser { runParser :: String -> Either ErrorMsg (String, a) }
+data Parser a = Parser { runParser :: String -> Either ErrorMsg (a, String) }
 
 
 instance Functor Parser where
@@ -36,16 +36,16 @@ oneOf = foldl (<|>) empty
 
 
 instance Monad Parser where
-    return x = Parser $ \s -> Right (s, x)
+    return x = Parser $ \s -> Right (x, s)
     
     pr >>= f = Parser $ \s -> case runParser pr s of
                                 Left err      -> Left err
-                                Right (s', r) -> runParser (f r) s'
+                                Right (r, s') -> runParser (f r) s'
 
 
 char :: Char -> Parser Char
 char ch = Parser $ \s -> case s of
-                             (x: xs) -> if x == ch then Right (xs, ch) else Left MatchFail
+                             (x: xs) -> if x == ch then Right (ch, xs) else Left MatchFail
                              []      -> Left EOF
 
 
@@ -59,13 +59,13 @@ string (x: xs) = do
 
 notChar :: Char -> Parser Char
 notChar ch = Parser $ \s -> case s of
-                                (x: xs) -> if x /= ch then Right (xs, x) else Left MatchFail
+                                (x: xs) -> if x /= ch then Right (x, xs) else Left MatchFail
                                 []      -> Left EOF 
 
 
 anyChar :: Parser Char
 anyChar = Parser $ \s -> case s of
-                            (x: xs) -> Right (xs, x)
+                            (x: xs) -> Right (x, xs)
                             []      -> Left EOF
 
 
@@ -75,7 +75,7 @@ emptyP = return ()
 
 eof :: Parser ()
 eof = Parser $ \s -> case s of
-                        []        -> Right ([], ())
+                        []        -> Right ((), [])
                         otherwise -> Left MatchFail
 
 
