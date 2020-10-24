@@ -10,7 +10,7 @@ type Pos = (Int, Int)
 
 
 showPos :: Pos -> String
-showPos (linePos, charPos) = "Line " ++ show linePos ++ ", position " ++ show charPos ++ ": "
+showPos (line, column) = "(Line " ++ show line ++ ", position " ++ show column ++ "):\n"
 
 
 data ErrorMsg = EOF_ReachedError Pos
@@ -40,8 +40,8 @@ updateParseState state s = ParseState newS newPos
 
 updateParsePos :: Pos -> String -> Pos
 updateParsePos = foldl update
-    where update (linePos, charPos) c | c == '\n' = (linePos + 1, 0)
-                                      | otherwise = (linePos, charPos + 1)
+    where update (line, column) c | c == '\n' = (line + 1, 0)
+                                      | otherwise = (line, column + 1)
 
 
 data Parser a = Parser { runParser :: ParseState -> Either ErrorMsg (a, ParseState) }
@@ -85,11 +85,7 @@ char ch = Parser $ \s -> case getParseString s of
 
 
 string :: String -> Parser String
-string [] = return []
-string (x: xs) = do
-    y  <- char x
-    y' <- string xs
-    return (y: y')
+string = sequence . map char
 
 
 notChar :: Char -> Parser Char
