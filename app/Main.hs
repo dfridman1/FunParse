@@ -24,5 +24,5 @@ main = do
     putStrLn "Enter expression:"
     line <- getLine
     let result = parse nestedParens line
-    putStrLn $ show result
+    putStrLn result
     main

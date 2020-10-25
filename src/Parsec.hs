@@ -153,7 +153,11 @@ many1 pr = do
     return $ x: xs
 
 
-parse :: Parser a -> String -> Either ErrorMsg (a, ParseState)
-parse pr s = do
+parse' :: Parser a -> String -> Either ErrorMsg (a, ParseState)
+parse' pr s = do
     let state = ParseState s (1, 1)
     runParser pr state
+
+
+parse :: Show a => Parser a -> String -> String
+parse pr = either show show . parse' pr
