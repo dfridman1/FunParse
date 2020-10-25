@@ -1,6 +1,7 @@
 module Main where
 
 
+import Control.Monad ( void )
 import Parsec ( Parser(), char, digits, eof, parse, sepBy, skipMany, space )
 
 
@@ -21,12 +22,8 @@ parseList = do
     skipMany space
     eof
     return $ readInt `map` xs
-        where sep = do
-                skipMany space
-                char ','
-                skipMany space
-              readInt x = read x :: Int
-
+        where readInt x = read x :: Int
+              sep       = sequence_ [skipMany space, void $ char ',', skipMany space]
 
 main :: IO ()
 main = do
