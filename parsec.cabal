@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b23ddb8df91c0574962880c84f0f9cb8db48b0af9f7d88c38110936c6c35144a
+-- hash: c95d6785643adb269f42414d86d53fa4f051a0feae7582425ab1c7a0041bd851
 
 name:           parsec
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      JsonParser
       Parsec
   other-modules:
       Paths_parsec
