@@ -1,16 +1,26 @@
 module Parsec (
-    Parser,
-    char,
-    digits,
-    eof,
-    many,
-    parse
+        Parser(),
+        char,
+        symbol,
+        eof,
+        option,
+        optional,
+        parse,
+        notChar,
+        many,
+        many1,
+        digit,
+        digits,
+        anyChar,
+        skipMany,
+        sepBy,
+        sepBy1,
+        space
 ) where
 
 
-import Control.Applicative hiding (many)
-import Control.Monad
-
+import Control.Applicative ( Alternative((<|>), empty) )
+import Control.Monad ( void )
 
 
 type Pos = (Int, Int)
@@ -72,9 +82,6 @@ instance Alternative Parser where
                                     (_, t)          -> t
 
 
-oneOf :: (Foldable t, Alternative f) => t (f a) -> f a
-oneOf = foldl (<|>) empty
-
 
 instance Monad Parser where
     return x = Parser $ \s -> Right (x, s)
@@ -91,8 +98,12 @@ char ch = Parser $ \s -> case getParseString s of
                              []      -> Left $ EOFReachedError (getParsePos s)
 
 
-string :: String -> Parser String
-string = mapM char
+space :: Parser Char
+space = char ' '
+
+
+symbol :: String -> Parser String
+symbol = mapM char
 
 
 notChar :: Char -> Parser Char
@@ -100,6 +111,10 @@ notChar ch = Parser $ \s -> case getParseString s of
                                 (x: _)  -> if x /= ch then Right (x, updateParseState s [x])
                                                       else Left $ UnexpectedCharError (getParsePos s) x
                                 []      -> Left $ EOFReachedError (getParsePos s)
+
+
+oneOf :: (Foldable t, Alternative f) => t (f a) -> f a
+oneOf = foldl (<|>) empty
 
 
 digit :: Parser Char
@@ -151,6 +166,23 @@ many1 pr = do
     x  <- pr
     xs <- many pr
     return $ x: xs
+
+
+sepBy1 :: Parser a -> Parser b -> Parser [a]
+sepBy1 pr sep = do
+    x <- pr
+    xs <- many f
+    return $ x: xs
+        where f = do
+                sep
+                pr
+
+sepBy :: Parser a -> Parser b -> Parser [a]
+sepBy pr = option [] . sepBy1 pr
+
+
+skipMany :: Parser a -> Parser ()
+skipMany = void . many
 
 
 parse' :: Parser a -> String -> Either ErrorMsg (a, ParseState)
