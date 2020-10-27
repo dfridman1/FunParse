@@ -15,7 +15,8 @@ module Parsec (
         skipMany,
         sepBy,
         sepBy1,
-        space
+        space,
+        choice
 ) where
 
 
@@ -34,6 +35,21 @@ data ErrorMsg = EOFReachedError Pos
               | ExpectedEOFError Pos Char
               | ExpectedCharError Pos Char Char
               | UnexpectedCharError Pos Char
+
+
+errorPos :: ErrorMsg -> Pos
+errorPos (EOFReachedError p) = p
+errorPos (ExpectedEOFError p _) = p
+errorPos (ExpectedCharError p _ _) = p
+errorPos (UnexpectedCharError p _) = p
+
+
+instance Eq ErrorMsg where
+    x == y = errorPos x == errorPos y
+
+
+instance Ord ErrorMsg where
+    x `compare` y = errorPos x `compare` errorPos y
 
 
 instance Show ErrorMsg where
@@ -79,8 +95,7 @@ instance Alternative Parser where
     lPr <|> rPr = Parser $ \s -> case (runParser lPr s, runParser rPr s) of
                                     (t@(Right _), _) -> t
                                     (_, t@(Right _)) -> t
-                                    (_, t)          -> t
-
+                                    (Left e1, Left e2) -> Left $ max e1 e2
 
 
 instance Monad Parser where
@@ -117,8 +132,12 @@ oneOf :: (Foldable t, Alternative f) => t (f a) -> f a
 oneOf = foldl (<|>) empty
 
 
+choice :: Foldable t => t (Parser a) -> Parser a
+choice = oneOf
+
+
 digit :: Parser Char
-digit = oneOf $ map (char . head . show) [0..9]
+digit = choice $ map (char . head . show) [0..9]
 
 
 digits :: Parser String
@@ -185,11 +204,7 @@ skipMany :: Parser a -> Parser ()
 skipMany = void . many
 
 
-parse' :: Parser a -> String -> Either ErrorMsg (a, ParseState)
-parse' pr s = do
+parse :: Parser a -> String -> Either ErrorMsg (a, ParseState)
+parse pr s = do
     let state = ParseState s (1, 1)
     runParser pr state
-
-
-parse :: Show a => Parser a -> String -> String
-parse pr = either show show . parse' pr
