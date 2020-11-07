@@ -29,12 +29,14 @@ library
   exposed-modules:
       JsonParser
       Parsec
+      Calculator
   other-modules:
       Paths_parsec
   hs-source-dirs:
       src
   build-depends:
       base >=4.7 && <5
+    , split
   default-language: Haskell2010
 
 executable parsec-exe
