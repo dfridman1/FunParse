@@ -3,7 +3,7 @@ module JsonParser where
 
 import Control.Applicative ( Alternative((<|>)) )
 import Data.List ( intercalate )
-import Parsec ( Parser(), digits, char, sepBy, symbol, parse, notChar, many, choice, skipMany )
+import FunParse ( Parser(), digits, char, sepBy, symbol, parse, notChar, many, choice, skipMany )
 
 
 data JValue = JNull

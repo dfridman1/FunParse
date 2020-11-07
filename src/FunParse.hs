@@ -1,4 +1,4 @@
-module Parsec (
+module FunParse (
         Parser(),
         char,
         symbol,

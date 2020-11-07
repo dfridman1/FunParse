@@ -1,3 +1,3 @@
-# Changelog for parsec
+# Changelog for funparse
 
 ## Unreleased changes

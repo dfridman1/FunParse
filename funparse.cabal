@@ -6,11 +6,11 @@ cabal-version: 1.12
 --
 -- hash: c95d6785643adb269f42414d86d53fa4f051a0feae7582425ab1c7a0041bd851
 
-name:           parsec
+name:           funparse
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/parsec#readme>
-homepage:       https://github.com/githubuser/parsec#readme
-bug-reports:    https://github.com/githubuser/parsec/issues
+description:    Please see the README on GitHub at <https://github.com/githubuser/funparse#readme>
+homepage:       https://github.com/githubuser/funparse#readme
+bug-reports:    https://github.com/githubuser/funparse/issues
 author:         Author name here
 maintainer:     example@example.com
 copyright:      2020 Author name here
@@ -23,15 +23,15 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/parsec
+  location: https://github.com/githubuser/funparse
 
 library
   exposed-modules:
       JsonParser
-      Parsec
+      FunParse
       Calculator
   other-modules:
-      Paths_parsec
+      Paths_funparse
   hs-source-dirs:
       src
   build-depends:
@@ -39,27 +39,27 @@ library
     , split
   default-language: Haskell2010
 
-executable parsec-exe
+executable funparse-exe
   main-is: Main.hs
   other-modules:
-      Paths_parsec
+      Paths_funparse
   hs-source-dirs:
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , parsec
+    , funparse
   default-language: Haskell2010
 
-test-suite parsec-test
+test-suite funparse-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Paths_parsec
+      Paths_funparse
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , parsec
+    , funparse
   default-language: Haskell2010

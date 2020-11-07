@@ -3,7 +3,7 @@ module Calculator where
 
 import Data.List.Split ( splitOn )
 import Control.Applicative ( Alternative((<|>)) )
-import Parsec ( Parser(), char, digits, parse )
+import FunParse ( Parser(), char, digits, parse )
 
 
 data Expr = Add Expr Expr
