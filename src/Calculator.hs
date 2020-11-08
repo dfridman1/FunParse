@@ -3,23 +3,27 @@ module Calculator where
 
 import Data.List.Split ( splitOn )
 import Control.Applicative ( Alternative((<|>)) )
-import FunParse ( Parser(), char, digits, parse )
+import FunParse ( Parser(), char, digits, parse, many1 )
 
 
-data Expr = Add Expr Expr
-          | Sub Expr Expr
-          | Mul Expr Expr
-          | Div Expr Expr
+data Expr = Sum [Expr]
+          | Prod [Expr]
           | Lit Double
+          | Neg Expr
+          | Inv Expr
             deriving Show
 
 
 eval :: Expr -> Double
-eval (Add x y) = eval x + eval y
-eval (Sub x y) = eval x - eval y
-eval (Mul x y) = eval x * eval y
-eval (Div x y) = eval x / eval y
-eval (Lit x)   = x
+eval (Sum x) = binop (+) x
+eval (Prod x) = binop (*) x
+eval (Lit x)  = x
+eval (Neg x)  = negate $ eval x
+eval (Inv x) = 1 / eval x
+
+
+binop :: (Double -> Double -> Double) -> [Expr] -> Double
+binop op = foldl1 op . map eval
 
 
 expr :: Parser Expr
@@ -28,10 +32,14 @@ expr = add <|> mul <|> term
 
 add :: Parser Expr
 add = do
-    t <- factor
-    char '+'
-    f <- expr
-    return $ Add t f
+    x  <- factor
+    xs <- many1 summandP
+    return $ Sum (x: xs)
+    where summandP = do
+            op <- char '-' <|> char '+'
+            fc <- factor
+            let f = if op == '-' then Neg else id
+            return $ f fc
 
 
 factor :: Parser Expr
@@ -40,10 +48,14 @@ factor = mul <|> term
 
 mul :: Parser Expr
 mul = do
-    e1 <- term
-    char '*'
-    e2 <- factor
-    return $ Mul e1 e2
+    x  <- term
+    xs <- many1 $ factorP
+    return $ Prod (x: xs)
+    where factorP = do
+            op <- char '/' <|> char '*'
+            te <- term
+            let f = if op == '/' then Inv else id
+            return $ f te
 
 
 term :: Parser Expr
@@ -77,9 +89,11 @@ testExample :: String -> Either String String
 testExample s = case "\t" `splitOn` s of
                     [e, r] -> case parse expr e of
                                 Left   _     -> Left "Parse error!"
-                                Right (x, _) -> if eval x == (read r :: Double)
+                                Right (x, _) -> if eval x ~= (read r :: Double)
                                                 then Right "Success!"
                                                 else Left e
+    where x ~= y = abs (x - y) < eps
+          eps    = 0.01
 
 
 mainTest :: IO ()
